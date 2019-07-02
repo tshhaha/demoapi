@@ -1,0 +1,617 @@
+openapi: 3.0.0
+info:
+  description: 'API draft for Bukalapak-Axinan Integration.'
+  version: "0.2"
+  title: 'Bukalapak-Axinan Integration'
+servers:
+- url: https://api.bukalapak.axinan.com/
+  description: Production server
+- url: https://api.bukalapak.staging.axinan.com/
+  description: Staging server
+security:
+- apiKey: []
+tags:
+  - name: Premium
+  - name: Order
+  - name: Claim
+  - name: Webhook
+paths:
+  /premiums:quote:
+    post:
+      tags:
+      - 'Premium'
+      summary: 'Get quotes'
+      description: >
+        Partner request the premium quotes for different products or combinations, 
+        couriers and service levels. Axinan will return a list of premiums.
+        These premiums will be dynamic and are based on shipping from/to, logistics, etc.
+      requestBody:
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+  /premiums/{premium_ids}:
+    get:
+      tags:
+      - 'Premium'
+      summary: 'Get Premium Details'
+      description: >
+        This API is used to retrieve details of premium(s).
+      parameters:
+      - in: path
+        name: 'premium_ids'
+        required: true
+        description: premium id list
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPremiumResponse'
+  /orders:insure:
+    post:
+      tags:
+      - 'Order'
+      summary: 'Purchase Policy'
+      description: >
+        Once the quotes are requested, Axinan will keep a record of the quotes. 
+        When purchasing, only a premium ID is required together with partner’s order ID.<br>
+        
+        A Claim URL is returned for policy holder to create/update claim against the policy on Axinan's Claim Portal when the partner don't have claim portal yet.
+        .
+      requestBody:
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/PurchaseRequest'
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseResponse'
+        404:
+          description: 'Invalid Premium id'
+
+  /orders/{order_ids}:
+    get:
+      tags:
+      - 'Order'
+      summary: 'Get Order'
+      description: >
+        This API will get the details of given order ids, used for partner to check the status of a claim.
+      parameters:
+      - in: path
+        name: 'order_ids'
+        required: true
+        description: order ids
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GetOrdersResponse'
+  /orders/{order_id}:
+    put:
+      tags:
+      - 'Order'
+      summary: 'Update Order Info'
+      description: >
+        When an order’s status is changed(e.g cancelled, shipping, delivered, etc), 
+        partner is responsible to notify Axinan in order to make corresponding changes to the policy.
+      parameters:
+      - in: path
+        name: 'order_id'
+        required: true
+        description: order id
+        schema:
+          type: string
+          example: 'order-id-1029isadfji12'
+      requestBody:
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+      responses:
+        200:
+          description: 'OK'
+        400:
+          description: 'Bad Requested. Cancel Failed.'
+  /orders/{order_id}:claim:
+    post:
+      tags:
+      - 'Order'
+      summary: 'File Claim'
+      description: >
+        When claim happens, partner can file 
+        claim against the policy on behavior of policyholder and Axinan will return a URL for policyholder to fill more detailed information.
+      parameters:
+      - in: path
+        name: 'order_id'
+        required: true
+        description: order id
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+  /claims/{claim_ids}:
+    get:
+      tags:
+      - 'Claim'
+      summary: 'Get Multiple Claim Response'
+      description: >
+        Partner can always use this API to get latest claim data. It is best practice when Partner received an claim-change webhook and use this API to get latest update.
+      parameters:
+      - in: path
+        name: 'claim_ids'
+        required: true
+        description: claim ids
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultipleClaimResponse'
+  
+  /axinan/claim:update:
+    post:
+      tags:
+      - 'Webhook'
+      summary: "a notification regarding a claim's update"
+      description: >
+       *This API should be Implemented by the Partner. 
+       Axinan will call this API to update the claim everytime when it is changed.
+      requestBody:
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/ClaimStatusChangeResponse'
+      responses:
+        200:
+          description: 'OK'
+  /axinan/orders/{order_ids}:
+    get:
+      tags:
+      - 'Webhook'
+      summary: 'Get Order Details'
+      description: >
+        Axinan needs some information, especially status(e.g shipping, lost, delivered, return shipping, return to origin) about the order to process claim. This API is required for Axinan to confirm the status of an order with partner, in case the API is not working properly in some cases.
+        Also for orders in some stages(e.g pending shipping for longer than usual), Axinan will query partner to make sure the order status is synced correctly.
+      parameters:
+      - in: path
+        name: 'order_ids'
+        required: true
+        description: order ids
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderStatusResponse'
+components:
+  schemas:
+    QuoteRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+          example: 'bukalapak-id-sdcio1o2953'
+        types:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/PreimumType'
+          example: [['transit'], ['transit', 'return']]
+        currency:
+          type: string
+          example: 'IDR'
+        merchant:
+          $ref: '#/components/schemas/UserIdentify'
+        customer:
+          $ref: '#/components/schemas/UserIdentify'
+        ship_to:
+          $ref: '#/components/schemas/ShippingAddress'
+        ship_from:
+          $ref: '#/components/schemas/ShippingAddress'
+        lineitems:
+          $ref: '#/components/schemas/Lineitems'
+        couriers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Couriers'
+    QuoteResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+          example: 'bukalapak-id-sdcio1o2953'
+        createdAt:
+          type: string
+          format: 'date-time'
+          example: '2018-03-10T23:59:48Z'
+          readOnly: true
+        premiums:
+          type: array
+          items:
+            $ref: '#/components/schemas/PremiumObjectWithoutPolicy'
+        updatedAt:
+          type: string
+          format: 'date-time'
+          example: '2018-03-10T23:59:48Z'
+          readOnly: true
+    PreimumType:
+      type: string
+      enum:
+        - 'transit'
+        - 'return'
+        - 'delay'
+    ClaimStatus:
+      type: string
+      enum:
+        - 'created'
+        - 'request_approval'
+        - 'approved'
+        - 'rejected'
+        - 'paid'
+    OrderStatus:
+      type: string
+      enum:
+        - 'created'
+        - 'canceled'
+        - 'closed'
+    ShippingStatus:
+      type: string
+      enum:
+        - 'shipped'
+        - 'received'
+        - 'lost'
+    PreimumCombination:
+      type: array
+      items:
+        type: string
+      example: ['transit', 'return']
+    ShippingAddress:
+      type: object
+      properties:
+        country_code:
+          type: string
+          example: 'SG'
+        post_code:
+          type: string
+          example: '059763'
+        name:
+          type: string
+          example: 'Alex Tan'
+        email:
+          type: string
+          example: 'alex_tan@gamil.com'
+        city:
+          type: string
+          example: 'Jakarta'
+        streetAddress:
+          type: string
+          example: '2 Havelock Road'
+    Lineitems:
+      type: array
+      items:
+        $ref: '#/components/schemas/Lineitem'
+    Lineitem:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: "4388921"
+        price:
+          type: number
+          example: 12.12
+        currency:
+          type: string
+          example: "IDR"
+        qty:
+          type: integer
+          example: 1
+        sku:
+          type: string
+          example: 'EWPE123123'
+        title:
+          type: string
+          example: 'Super awesome red tshirt'
+        weight:
+          type: number
+          example: 2.1
+    UserIdentify:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "342342"
+        name:
+          type: string
+          example: "Jack L."
+        email:
+          type: string
+          example: "jack.l@gmail.com"
+    ParcelAttribute:
+      type: object
+      properties:
+        depth:
+          type: number
+          example: 0.13
+        length:
+          type: number
+          example: 10
+        width:
+          type: number
+          example: 10
+        height:
+          type: number
+          example: 10
+    ShortCouriers:
+      type: object
+      properties:
+        courier_type:
+          type: string
+          example: 'CouriersPlease'
+        service_level:
+          type: string
+          example: 'standard'
+    Couriers:
+      type: object
+      properties:
+        courier_type:
+          type: string
+          example: 'CouriersPlease'
+        quote:
+          type: object
+          properties:
+            price:
+              type: integer
+              example: 2040
+            currency:
+              type: string
+              example: "IDR"
+            extimated_transit_time:
+              type: string
+              example: '3 business days'
+            delivery_date:
+              type: string
+              example: '2014-09-10'
+            delivery_window:
+              type: string
+              example: '07:00-10:00'
+            delivery_window_desc:
+              type: string
+              example: '7AM-10AM'
+        service_level:
+          type: string
+          example: 'standard'
+    Policy:
+      type: object
+      properties:
+        type:
+          type: string
+          example: transit
+        lineitems:
+          $ref: '#/components/schemas/Lineitems'
+        max_payout_amount:
+          $ref: '#/components/schemas/PremiumAmountObject'
+        coverage_duration_in_days:
+          type: integer
+          example: 15
+        policy_holder:
+          $ref: '#/components/schemas/UserIdentify'
+    PremiumObjectWithoutPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 'premium-id-120931390jsdkfj12'
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreimumCombination'
+        counrier_type:
+          type: string
+          example: 'CouriersPlease'
+        service_level:
+          type: string
+          example: 'standard'
+        premiumAmount:
+          $ref: '#/components/schemas/PremiumAmountObject'
+    PremiumObject:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'premium-id-12aslkdjflkasef'
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreimumCombination'
+        courier:
+          $ref: '#/components/schemas/ShortCouriers'
+        premium:
+          $ref: '#/components/schemas/PremiumAmountObject'
+        policy:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+    PremiumAmountObject:
+      type: object
+      properties:
+        amount:
+          type: number
+          example: 100
+        currency:
+          type: string
+          example: "IDR"
+    PurchaseRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          example: '667'
+        premium_id:
+          type: string
+          example: 'premium-id-12aslkdjflkasef'
+    PurchaseResponse:
+      type: object
+      properties:
+        order_id:
+          type: string
+          example: '667'
+        premium_id:
+          type: string
+          example: 'premium-id-12aslkdjflkasef'
+        claim_url:
+          type: string
+          example: 'https://claim.bukalapak.axinan.com/sldkjvzoifvjqwalsdfjgoadij12094209345'
+    GetPremiumResponse:
+      type: object
+      properties:
+        premiums:
+          type: array
+          items:
+            $ref: '#/components/schemas/PremiumObject'
+    UpdateOrderRequest:
+      type: object
+      properties:
+        order_status:
+          $ref: '#/components/schemas/OrderStatus'
+        shipping_status:
+          $ref: '#/components/schemas/ShippingStatus'
+        tracking_number:
+          type: string
+          example: 'TX128231283'
+        notes:
+          type: string
+          example: 'returned because of wrong address'
+    OrderStatusResponse:
+      type: object
+      properties:
+        order_id:
+          type: string
+          example: 'order-id-1029isadfji12'
+        order_status:
+          $ref: '#/components/schemas/OrderStatus'
+        shipping_status:
+          $ref: '#/components/schemas/ShippingStatus'
+        notes:
+          type: string
+          example: 'Returned because of wrong address'
+        tracking_number:
+          type: string
+          example: 'TX128231283'
+    ClaimRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          example: 'order-id-1029isadfji12'
+        lineitems:
+          $ref: '#/components/schemas/Lineitems'
+        reason:
+          type: string
+          example: "I don't like it"
+        parcel_attributes:
+          $ref: '#/components/schemas/ParcelAttribute'
+    ClaimStatusChangeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'claim-id-1029isadfji12'
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+    MultipleClaimResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/ClaimResponse'
+    ClaimResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'claim-id-1029isadfji12'
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        order_id:
+          type: string
+          example: 'order-id-1029isadfji12'
+        lineitems:
+          $ref: '#/components/schemas/Lineitems'
+        reason:
+          type: string
+          example: "I don't like it"
+        parcel_attributes:
+          $ref: '#/components/schemas/ParcelAttribute'
+        claim_url:
+          type: string
+          example: 'https://claim.bukalapak.axinan.com/sldkjvzoifvjqwalsdfjgoadij12094209345'
+    GetOrdersResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'order-id-1029isadfji12'
+        order_status:
+          $ref: '#/components/schemas/OrderStatus'
+        shipping_status:
+          $ref: '#/components/schemas/ShippingStatus'
+        tracking_number:
+          type: string
+          example: 'TX128231283'
+        notes:
+          type: string
+          example: 'returned because of wrong address'
+        claim_url:
+          type: string
+          example: 'https://claim.bukalapak.axinan.com/sldkjvzoifvjqwalsdfjgoadij12094209345'

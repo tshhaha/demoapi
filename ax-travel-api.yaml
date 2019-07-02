@@ -1,0 +1,645 @@
+openapi: 3.0.0
+info:
+  description: 'API draft for Axinan Travel Insurace API Integration.'
+  version: "0.1"
+  title: 'Axinan Travel Integration'
+servers:
+  - url: https://api.travel.axinan.com/
+    description: Production server
+  - url: https://api.travel.staging.axinan.com/
+    description: Staging server
+security:
+  - apiKey: []
+tags:
+  - name: Premium
+  - name: Policy
+  - name: Claim
+  - name: Webhook
+paths:
+  /premium:quote:
+    post:
+      tags:
+        - 'Premium'
+      summary: 'Get quotes with basic information.'
+      description: >
+        Partner request the premium quotes for different products or 
+        combinations and selected people. Axinan will return a list of premium 
+        plans. These plans will be dynamic and based on travelling from/to, age 
+        of group member, etc.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+        400:
+          description: 'Bad Request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: 'Unauthorised'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: 'Generic Server Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: 'Service Unavailable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /policy:create:
+    post:
+      tags:
+        - 'Policy'
+      summary: 'Request to create policy based on premium plan received.'
+      description: |
+        Partner request to create policy based on premium plan received from 
+        /premium:quote. Axinan will return the result of policy creation and the
+        policy ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyCreateRequest'
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDetailResponse'
+        400:
+          description: 'Bad Request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: 'Unauthorised'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: 'Generic Server Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: 'Service Unavailable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /policy/{policyId}:
+    get:
+      tags:
+        - 'Policy'
+      summary: 'Get policy details by policy ID.'
+      description: |
+        Partner request to get policy details according to policy ID.
+      parameters:
+      - in: path
+        name: 'policyId'
+        required: true
+        description: Policy ID.
+        schema:
+          type: string
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDetailResponse'
+        404:
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: 'Service Unavailable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /claim/{policyId}:create:
+    post:
+      tags:
+        - 'Claim'
+      summary: 'Create claim by policy ID.'
+      description: |
+        Partner request to start a claim process against a policy ID. If the 
+        policy ID is verified, a claim URL will be returned to where partner 
+        should redirect.
+      parameters:
+      - in: path
+        name: 'policyId'
+        required: true
+        description: Policy ID.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommonRequest' 
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimCreateResponse'
+        400:
+          description: 'Bad Request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: 'Unauthorised'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: 'Forbidden'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: 'Generic Server Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: 'Service Unavailable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /claim/{claimId}:
+    get:
+      tags:
+        - 'Claim'
+      summary: 'Get claim status.'
+      description: |
+        Partner can query a claim's status via the API.
+      parameters:
+      - in: path
+        name: 'claimId'
+        required: true
+        description: Claim ID.
+        schema:
+          type: string
+      responses:
+        200:
+          description: 'OK'
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimStatusResponse'
+        404:
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: 'Service Unavailable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /claim/{claimId}:update:
+    post:
+      tags:
+      - 'Webhook'
+      summary: "Notify claim status update."
+      description: >
+        This API should be implemented by the Partner. Axinan will call this API
+         to update the claim status when it changed.
+      requestBody:
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/ClaimStatusResponse'
+      responses:
+        200:
+          description: 'OK'
+        400:
+          description: 'Bad Request'
+        500:
+          description: 'Generic Server Error'
+components:
+  schemas:
+    #######################################################################
+    # ENUMS
+    # Country, ID Type, etc are not reflected in API document.
+    ClaimStatus:
+      type: string
+      enum:
+        - 'Created'
+        - 'Processing'
+        - 'Pending Material'
+        - 'Rejected'
+        - 'Approved'
+        - 'Approved(Paid)'
+    Gender:
+      type: string
+      enum:
+        - 'Male'
+        - 'Female'
+    GroupType:
+      type: string
+      enum:
+        - 'Individual'
+        - 'Family'
+        - 'Group'
+    Insurance:
+      type: string
+      enum:
+        - 'Travel Joy'
+    PremiumType:
+      type: string
+      enum:
+        - 'Elite'
+        - 'Deluxe'
+        - 'Vital'
+    RelationshipType:
+      type: string
+      enum:
+        - 'Child'
+        - 'Friend'
+        - 'Others'
+        - 'Parent'
+        - 'Relative'
+        - 'Self'
+        - 'Siblings'
+        - 'Spouse'
+    TripType:
+      type: string
+      enum:
+        - 'Single Trip'
+        - 'Annual Multi-trip'
+
+    #######################################################################
+    # OBJECTS
+    Address:
+      type: object
+      required:
+        - postalCode
+        - street
+        - country
+      properties:
+        postalCode:
+          type: string
+          example: '010008'
+        unitNo:
+          type: string
+          example: '01-11'
+        blockNo:
+          type: string
+          example: 'Blk B'
+        buildingName:
+          type: string
+          example: 'AX Tower'
+        street:
+          type: string
+          example: '55 Fifth Avenue'
+        city:
+          type: string
+          example: 'East Jakarta'
+        state:
+          type: string
+          example: 'Taipei'
+        country:
+          type: string
+          example: 'Indonesia'
+    Applicant:
+      type: object
+      required:
+        - personalDetails
+        - address
+        - contactInfo
+      properties:
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+        address:
+          $ref: '#/components/schemas/Address'
+        contactInfo:
+          $ref: '#/components/schemas/ContactInfo'
+    ContactInfo:
+      type: object
+      properties:
+        mobile:
+          type: string
+          example: '(+65)98765432'
+        home:
+          type: string
+          example: '(+65)87654321'
+        email:
+          type: string
+          example: 'example@email.com'
+    Duration:
+      type: object
+      required:
+        - start
+        - end
+      properties:
+        start:
+          type: string
+          example: '2019-07-02'
+        end:
+          type: string
+          example: '2019-07-18'
+    GroupInfo:
+      type: object
+      required:
+        - type
+        - adultNo
+      properties:
+        type:
+          $ref: '#/components/schemas/GroupType'
+        adultNo:
+          type: integer
+          example: 1
+        childNo:
+          type: integer
+          example: 0
+    InsuredPerson:
+      type: object
+      required:
+        - personalDetails
+        - relationshipWithApplicant
+      properties:
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+        relationshipWithApplicant:
+          $ref: '#/components/schemas/RelationshipType'
+    PersonalDetails:
+      type: object
+      required:
+        - name
+        - idType
+        - idNo
+        - nationality
+        - dateOfBirth
+        - gender
+      properties:
+        name: 
+          type: string
+          example: 'Jack Ma'
+        idType:
+          type: string
+          example: 'NRIC(Singaporean)'
+        idNo:
+          type: string
+          example: 'S9012345X'
+        nationality:
+          type: string
+          example: 'Singapore'
+        dateOfBirth:
+          type: string
+          example: '1990-10-10'
+        gender:
+          $ref: '#/components/schemas/Gender'
+    policyDetails:
+      type: object
+      required:
+        - id
+        - createDate
+        - trasactionNo
+        - premiumPlan
+        - applicant
+        - insuredPersons
+      properties:
+        id:
+          type: string
+          example: 'ax-pid-2837572019'
+        createDate:
+          type: string
+          example: '2019-06-20'
+        trasactionNo:
+          type: string
+          example: 'tx928361639477291872368'
+        premiumPlan:
+          $ref: '#/components/schemas/PremiumPlan'
+        applicant:
+          $ref: '#/components/schemas/Applicant'
+        insuredPersons:
+          type: array
+          items:
+            $ref: '#/components/schemas/InsuredPerson'
+    PremiumPlan:
+      type: object
+      required:
+        - id
+        - insurance
+        - tripInfo
+        - groupInfo
+        - type
+        - price
+        - description
+      properties:
+        id:
+          type: string
+          example: 'axppid-xijd239e0wjr3k48tjd'
+        insurance:
+          $ref: '#/components/schemas/Insurance'
+        tripInfo:
+          $ref: '#/components/schemas/TripInfo'
+        groupInfo:
+          $ref: '#/components/schemas/GroupInfo'
+        type:
+          $ref: '#/components/schemas/PremiumType'
+        price:
+          type: string
+          example: SGD 53.00
+        description:
+          type: string
+          example: | 
+            Personal Accident up to $500,000.
+            Medical Expenses Incurred Overseas up to $1,000,000.
+            Trip Cancellation or Postponement up to $15,000.
+            Financial Collapse of Licensed Tour Operation up to $12,000.
+            Baggage Delay up to  $1,000.
+            Travel Delay up to $2,000.
+            Full Terrorism Cover up to $500,000.
+            Alternative Accommodation Arrangement up to $100.
+            Emergency Medical Evacuation or Repatriation includes Pre-Existing Medical Conditions.
+    TripInfo:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TripType'
+        period:
+          $ref: '#/components/schemas/Duration'
+        destination:
+          type: array
+          items:
+            type: string
+          example: [Thanland', 'Japan']
+    
+    #######################################################################
+    # REQUESTS/RESPONSES
+    ClaimCreateResponse:
+      type: object
+      required:
+        - requestId
+        - policyId
+        - claimId
+        - url
+      properties:
+        requestId:
+          type: string
+          example: 'ax-sdcio1o2953'
+        policyId:
+          type: string
+          example: 'ax-pid-2837572019'
+        claimId:
+          type: string
+          example: 'ax-cid-283757201901'
+        url:
+          type: string
+          example: 'https://claim.travel.axinan.com/sldkjvzoifvjqwalsdfjgoadij12094209345' 
+    ClaimStatusResponse:
+      type: object
+      required:
+        - policyId
+        - claimId
+        - status
+        - url
+      properties:
+        policyId:
+          type: string
+          example: 'ax-pid-2837572019'
+        claimId:
+          type: string
+          example: 'ax-cid-283757201901'
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        comment:
+          type: string
+          example: 'Please provide photos.'
+        url:
+          type: string
+          example: 'https://claim.travel.axinan.com/sldkjvzoifvjqwalsdfjgoadij12094209345'
+    CommonRequest:
+      type: object
+      required:
+        - requestId
+      properties:
+        requestId:
+          type: string
+          example: 'ax-sdcio1o2953'
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          example: '401'
+        message:
+          type: string
+          example: 'Example error message.'
+    PolicyCreateRequest:
+      type: object
+      required:
+        - requestId
+        - applicant
+        - insuredPersons
+      properties:
+        requestId:
+          type: string
+          example: 'ax-sdcio1o2953'
+        planId:
+          type: string
+          example: 'axppid-xijd239e0wjr3k48tjd'
+        applicant:
+          $ref: '#/components/schemas/Applicant'
+        insuredPersons:
+          type: array
+          items:
+            $ref: '#/components/schemas/InsuredPerson'
+    PolicyDetailResponse:
+      type: object
+      required:
+        - policyDetails
+      properties:
+        policyDetails:
+          $ref: '#/components/schemas/policyDetails'
+    QuoteRequest:
+      type: object
+      required:
+        - requestId
+        - insurance
+        - tripInfo
+        - groupInfo
+      properties:
+        requestId:
+          type: string
+          example: 'ax-sdcio1o2953'
+        insurance:
+          $ref: '#/components/schemas/Insurance'
+        tripInfo:
+          $ref: '#/components/schemas/TripInfo'
+        groupInfo:
+          $ref: '#/components/schemas/GroupInfo'
+    QuoteResponse:
+      type: object
+      required:
+        - requestId
+        - plans
+      properties:
+        requestId:
+          type: string
+          example: 'ax-sdcio1o2953'
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PremiumPlan'
