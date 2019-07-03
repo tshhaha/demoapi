@@ -31,14 +31,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/QuoteRequest'
+              $ref: '#/components/schemas/PremiumQuoteRequest'
       responses:
         200:
           description: 'OK'
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/QuoteResponse'
+                $ref: '#/components/schemas/PremiumQuoteResponse'
         400:
           description: 'Bad Request'
           content:
@@ -517,7 +517,7 @@ components:
           $ref: '#/components/schemas/TripType'
         period:
           $ref: '#/components/schemas/Duration'
-        destination:
+        destinations:
           type: array
           items:
             type: string
@@ -613,7 +613,7 @@ components:
       properties:
         policyDetails:
           $ref: '#/components/schemas/policyDetails'
-    QuoteRequest:
+    PremiumQuoteRequest:
       type: object
       required:
         - requestId
@@ -630,7 +630,7 @@ components:
           $ref: '#/components/schemas/TripInfo'
         groupInfo:
           $ref: '#/components/schemas/GroupInfo'
-    QuoteResponse:
+    PremiumQuoteResponse:
       type: object
       required:
         - requestId
